@@ -15,12 +15,19 @@ param(
     [string]$StartDate  = (Get-Date).ToString("yyyy-MM-dd"),
     [string]$EndDate    = (Get-Date).ToString("yyyy-MM-dd"),
     [int]   $CustomerId = 0,
-    [string]$OutputDir  = (Join-Path $PSScriptRoot "saida"),
+    [string]$OutputDir  = "",
     [switch]$NoBrowser
 )
 
 $ErrorActionPreference = "Stop"
 $BaseUrl = "https://api.auvo.com.br/v2"
+
+# No PowerShell 5.1 o $PSScriptRoot ainda esta vazio quando o bloco param e avaliado
+# (acontece ao rodar via "powershell -File"), entao a pasta e resolvida aqui.
+$RaizScript = $PSScriptRoot
+if (-not $RaizScript) { $RaizScript = Split-Path -Parent $MyInvocation.MyCommand.Definition }
+if (-not $RaizScript) { $RaizScript = (Get-Location).Path }
+if (-not $OutputDir)  { $OutputDir  = Join-Path $RaizScript "saida" }
 
 $script:Headers     = $null
 $script:TokenExpira = [datetime]::MinValue
@@ -30,7 +37,7 @@ function Get-AuvoCredencial {
     $token = $env:AUVO_API_TOKEN
 
     if (-not $key -or -not $token) {
-        $cfg = Join-Path $PSScriptRoot "config.local.json"
+        $cfg = Join-Path $RaizScript "config.local.json"
         if (Test-Path $cfg) {
             $c = Get-Content $cfg -Raw -Encoding UTF8 | ConvertFrom-Json
             if (-not $key)   { $key   = $c.apiKey }
