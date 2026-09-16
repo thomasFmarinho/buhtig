@@ -37,7 +37,14 @@ $env:AUVO_API_TOKEN = "seu-token"
 Opção 2 — arquivo local: copie `config.exemplo.json` para `config.local.json` e
 preencha. Esse arquivo é ignorado pelo Git e não vai para o repositório.
 
-## Uso
+## Uso no dia a dia (duplo clique)
+
+Depois de criar o `config.local.json`, basta dar **duplo clique em `contagem.bat`**.
+Ele pergunta o período (Enter aceita o padrão, que é o dia anterior), roda a
+conferência e abre o relatório no navegador. Não é preciso abrir o PowerShell,
+nem liberar política de execução, nem digitar credenciais.
+
+## Uso pela linha de comando
 
 ```powershell
 # Tarefas de hoje
