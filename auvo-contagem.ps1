@@ -200,6 +200,9 @@ table{width:100%;border-collapse:collapse;font-size:14px}
 th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--sec);padding:10px 16px;border-bottom:1px solid var(--linha);font-weight:600}
 td{padding:10px 16px;border-bottom:1px solid #f1f2f4}
 tr:last-child td{border-bottom:none}
+tfoot td{font-weight:600;background:#fafbfc;border-top:2px solid var(--linha);border-bottom:none}
+tfoot td.neg{color:var(--falta)}
+tfoot td.rot{color:var(--sec);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
 th.num,td.num{text-align:right;width:90px;font-variant-numeric:tabular-nums}
 tr.falta{background:#fdf3f2}
 tr.exc{background:#fdf6ec}
@@ -245,7 +248,7 @@ tr.sem{background:#f7f7f8}
         [void]$sb.AppendLine("<section class=""card"" data-div=""$($f.Divergencias)"">")
         [void]$sb.AppendLine('<header><div>')
         [void]$sb.AppendLine("<div class=""tit"">Ficha $(Protect-Html $f.Ficha) &middot; $(Protect-Html $f.Cliente)</div>")
-        [void]$sb.AppendLine("<div class=""meta"">$(Format-DataBr $f.Data) &middot; $(Protect-Html $f.Responsavel) &middot; $(Protect-Html $f.Servico) &middot; esperado $($f.TotalEsperado) / realizado $($f.TotalRealizado)</div>")
+        [void]$sb.AppendLine("<div class=""meta"">$(Format-DataBr $f.Data) &middot; $(Protect-Html $f.Responsavel) &middot; $(Protect-Html $f.Servico)</div>")
         [void]$sb.AppendLine("</div>$badge</header>")
 
         if ($contados.Count -gt 0) {
@@ -263,7 +266,10 @@ tr.sem{background:#f7f7f8}
                 [void]$sb.AppendLine("<td>$(Protect-Html $i.Setor)</td><td class=""num"">$($i.Esperado)</td><td class=""num"">$real</td><td class=""num"">$dif</td>")
                 [void]$sb.AppendLine("<td><span class=""sit $cls"">$($i.Situacao)</span></td><td class=""obs"">$(Protect-Html $i.Observacao)</td></tr>")
             }
-            [void]$sb.AppendLine('</tbody></table>')
+            [void]$sb.AppendLine('</tbody><tfoot><tr>')
+            [void]$sb.AppendLine("<td class=""rot"">Total da ficha &middot; $($contados.Count) setores</td>")
+            [void]$sb.AppendLine("<td class=""num"">$($f.TotalEsperado)</td><td class=""num"">$($f.TotalRealizado)</td><td class=""num $(if ($f.Diferenca -ne 0) { ""neg"" })"">$($f.Diferenca)</td>")
+            [void]$sb.AppendLine('<td colspan="2"></td></tr></tfoot></table>')
         }
 
         $infosUteis = @($infos | Where-Object { $_.RespostaBruta -and $_.RespostaBruta.Trim() -notmatch '^\.*$' })
