@@ -50,11 +50,20 @@ preencha. Esse arquivo é ignorado pelo Git e não vai para o repositório.
 .\auvo-contagem.ps1 -StartDate 2026-09-01 -EndDate 2026-09-30 -CustomerId 24201924
 ```
 
-Saída no terminal com o resumo de cada ficha e as divergências em destaque, mais
-dois CSVs (separados por `;`, prontos para o Excel) na pasta `saida/`:
+Cada execução gera três arquivos na pasta `saida/`:
 
+- `relatorio-<data>.html` — relatório visual, abre sozinho no navegador ao final.
+  Traz os totais no topo, uma tabela por ficha, as divergências destacadas em
+  vermelho e um filtro "mostrar apenas as divergências". Imprime bem em PDF.
 - `itens-<data>.csv` — uma linha por setor/item conferido
 - `resumo-<data>.csv` — uma linha por ficha, com totais e status
+
+No terminal fica apenas uma linha por ficha e o total geral. Use `-NoBrowser`
+para não abrir o navegador automaticamente (útil em execução agendada).
+
+> Se ao executar aparecer o erro *"a execução de scripts foi desabilitada neste
+> sistema"*, rode uma vez na janela do PowerShell:
+> `Unblock-File .\auvo-contagem.ps1` e `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`.
 
 ## Agendamento
 
