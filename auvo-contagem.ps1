@@ -109,9 +109,11 @@ function ConvertTo-Itens {
             # Quantidade esperada: vem depois do separador " I " no nome da pergunta.
             $esperado = $null
             $unidade  = ""
+            $setor    = $desc
             if ($desc -match '\sI\s+(\d+)\s*(\S*)\s*$') {
                 $esperado = [int]$Matches[1]
                 $unidade  = $Matches[2]
+                $setor    = ($desc -replace '\sI\s+\d+\s*\S*\s*$', '').Trim()
             }
 
             # Quantidade realizada: numero no inicio da resposta.
@@ -122,6 +124,10 @@ function ConvertTo-Itens {
             $observacao = ""
             if ($reply -match '^\s*\d+\b\s*(.+)$') { $observacao = $Matches[1] }
             $observacao = $observacao.Trim("() -:.".ToCharArray())
+            if ($unidade -and $observacao) {
+                $u = [regex]::Escape($unidade.TrimEnd('s', 'S'))
+                $observacao = [regex]::Replace($observacao, "^$u" + "s?\b[\s,;:.-]*", "", 'IgnoreCase').Trim()
+            }
 
             $situacao  = "INFO"
             $diferenca = $null
@@ -144,7 +150,7 @@ function ConvertTo-Itens {
                 Cliente      = $Tarefa.customerDescription
                 Responsavel  = $Tarefa.userToName
                 Servico      = $Tarefa.taskTypeDescription
-                Setor        = $desc
+                Setor        = $setor
                 Unidade      = $unidade
                 Esperado     = $esperado
                 Realizado    = $realizado
@@ -233,18 +239,21 @@ tbody tr:last-child td{border-bottom:none}
 th.num,td.num{text-align:right;width:92px;font-variant-numeric:tabular-nums}
 tbody tr{transition:background .12s ease}
 tbody tr:hover{background:#fbfbf9}
-tr.falta{background:#fdf4f2}
+tr.falta{background:#fdf6f5}
 tr.falta:hover{background:#fbeeeb}
+tr.falta td:first-child{box-shadow:inset 3px 0 0 var(--crit-mark)}
 tr.exc{background:#fdf7ec}
 tr.exc:hover{background:#fbf2e2}
-tr.sem{background:#f7f7f5}
+tr.sem{background:#f8f8f6}
 tr.sem:hover{background:#f2f2ef}
+tr.sem td:first-child{box-shadow:inset 3px 0 0 #c9c9c1}
 .pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:650;padding:3px 9px;border-radius:999px;white-space:nowrap}
 .pill.ok{background:var(--good-bg);color:var(--good)}
 .pill.falta{background:var(--crit-bg);color:var(--crit)}
 .pill.exc{background:var(--warn-bg);color:var(--warn)}
 .pill.sem{background:var(--neutro-bg);color:var(--ink2)}
 .pill .gl{font-size:9px;line-height:1}
+.ok-mini{color:#9a9a92;font-size:13px}
 .obs{color:var(--ink2);font-size:12.5px}
 .semjust{color:var(--warn);font-style:italic}
 tfoot td{font-weight:650;background:#fafaf8;border-top:1px solid var(--hair);border-bottom:none;padding-top:11px;padding-bottom:11px}
@@ -333,7 +342,7 @@ details.motivos[open] .dica::after{content:"clique para fechar"}
                     default        { "ok" }
                 }
                 $real = if ($null -eq $i.Realizado) { "-" } else { $i.Realizado }
-                $dif  = if ($null -eq $i.Diferenca) { "-" } else { $i.Diferenca }
+                $dif  = if ($null -eq $i.Diferenca) { "-" } elseif ($i.Diferenca -eq 0) { "" } else { $i.Diferenca }
                 [void]$sb.AppendLine("<tr class=""$cls"" data-sit=""$($i.Situacao)"">")
                 [void]$sb.AppendLine("<td>$(Protect-Html $i.Setor)</td><td class=""num"">$($i.Esperado)</td><td class=""num"">$real</td><td class=""num"">$dif</td>")
                 $obsCel = if ($i.Observacao)        { Protect-Html $i.Observacao }
@@ -345,7 +354,9 @@ details.motivos[open] .dica::after{content:"clique para fechar"}
                     "SEM RESPOSTA" { "&#8211;" }
                     default        { "&#10003;" }
                 }
-                [void]$sb.AppendLine("<td><span class=""pill $cls""><span class=""gl"">$glifo</span>$($i.Situacao)</span></td><td class=""obs"">$obsCel</td></tr>")
+                $celSit = if ($i.Situacao -eq "OK") { '<span class="ok-mini">&#10003;</span>' }
+                          else { "<span class=""pill $cls""><span class=""gl"">$glifo</span>$($i.Situacao)</span>" }
+                [void]$sb.AppendLine("<td>$celSit</td><td class=""obs"">$obsCel</td></tr>")
             }
             [void]$sb.AppendLine('</tbody><tfoot><tr>')
             [void]$sb.AppendLine("<td class=""rot"">Total da ficha &middot; $($contados.Count) setores</td>")
