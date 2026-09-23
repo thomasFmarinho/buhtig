@@ -186,9 +186,10 @@ function New-RelatorioHtml {
     $css = @"
 :root{--bg:#f4f5f7;--card:#fff;--linha:#e5e7eb;--txt:#1f2430;--sec:#6b7280;--ok:#12805c;--falta:#c0392b;--exc:#b45309}
 *{box-sizing:border-box}
-body{margin:0;padding:32px 16px;background:var(--bg);color:var(--txt);font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif}
+body{margin:0;padding:32px 16px;-webkit-font-smoothing:antialiased;background:var(--bg);color:var(--txt);font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif}
 .wrap{max-width:1080px;margin:0 auto}
-h1{font-size:22px;margin:0 0 4px}
+h1{font-size:22px;margin:0 0 4px;display:flex;align-items:center;gap:10px;letter-spacing:-.01em}
+h1::before{content:"";width:4px;height:21px;border-radius:2px;background:linear-gradient(180deg,#159c72,#0e6a4d)}
 .sub{color:var(--sec);font-size:14px;margin-bottom:24px}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px}
 .kpi{background:var(--card);border:1px solid var(--linha);border-radius:10px;padding:14px 16px}
@@ -197,7 +198,10 @@ h1{font-size:22px;margin:0 0 4px}
 .kpi .val.ok{color:var(--ok)}
 .kpi .val.falta{color:var(--falta)}
 .filtro{display:block;margin-bottom:16px;font-size:14px;color:var(--sec);cursor:pointer}
-.card{background:var(--card);border:1px solid var(--linha);border-radius:10px;margin-bottom:16px;overflow:hidden}
+.card{background:var(--card);border:1px solid var(--linha);border-radius:10px;margin-bottom:16px;overflow:hidden;box-shadow:0 1px 2px rgba(16,24,40,.04),0 1px 3px rgba(16,24,40,.05)}
+tbody tr{transition:box-shadow .12s ease}
+tbody tr:hover{box-shadow:inset 0 0 0 999px rgba(16,24,40,.018)}
+.kpi.alerta{box-shadow:inset 0 3px 0 var(--falta)}
 .card>header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--linha);flex-wrap:wrap}
 .tit{font-weight:600}
 .meta{color:var(--sec);font-size:13px;margin-top:2px}
@@ -211,6 +215,16 @@ tr:last-child td{border-bottom:none}
 tfoot td{font-weight:600;background:#fafbfc;border-top:2px solid var(--linha);border-bottom:none}
 tfoot td.neg{color:var(--falta)}
 .semjust{color:var(--exc);font-style:italic}
+details.motivos>summary{display:flex;align-items:center;gap:10px;padding:14px 16px;cursor:pointer;list-style:none;-webkit-user-select:none;user-select:none}
+details.motivos>summary::-webkit-details-marker{display:none}
+details.motivos>summary::before{content:"";width:0;height:0;border-left:5px solid var(--sec);border-top:4px solid transparent;border-bottom:4px solid transparent;transition:transform .15s ease}
+details.motivos[open]>summary::before{transform:rotate(90deg)}
+details.motivos>summary:hover{background:#fafbfc}
+details.motivos[open]>summary{border-bottom:1px solid var(--linha)}
+details.motivos .cont{background:#fdecea;color:var(--falta);font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px}
+details.motivos .dica{margin-left:auto;font-size:12px;color:var(--sec);font-weight:400}
+details.motivos .dica::after{content:"clique para abrir"}
+details.motivos[open] .dica::after{content:"clique para fechar"}
 .motivos table td{border-bottom:1px solid #f1f2f4}
 .motivos td.fic{white-space:nowrap;color:var(--sec)}
 .tit a{color:inherit;text-decoration:none;border-bottom:1px dotted var(--sec)}
@@ -244,20 +258,20 @@ tr.sem{background:#f7f7f8}
     [void]$sb.AppendLine("<div class=""kpi""><div class=""rot"">Fichas</div><div class=""val"">$($Resumo.Count)</div></div>")
     [void]$sb.AppendLine("<div class=""kpi""><div class=""rot"">Esperado</div><div class=""val"">$gEsperado</div></div>")
     [void]$sb.AppendLine("<div class=""kpi""><div class=""rot"">Realizado</div><div class=""val"">$gRealizado</div></div>")
-    [void]$sb.AppendLine("<div class=""kpi""><div class=""rot"">Diferença</div><div class=""val $classeDif"">$gDif</div></div>")
-    [void]$sb.AppendLine("<div class=""kpi""><div class=""rot"">A verificar</div><div class=""val $classeVer"">$aVerificar</div></div>")
+    [void]$sb.AppendLine("<div class=""kpi $(if ($gDif -ne 0) { ""alerta"" })""><div class=""rot"">Diferença</div><div class=""val $classeDif"">$gDif</div></div>")
+    [void]$sb.AppendLine("<div class=""kpi $(if ($aVerificar -gt 0) { ""alerta"" })""><div class=""rot"">A verificar</div><div class=""val $classeVer"">$aVerificar</div></div>")
     [void]$sb.AppendLine('</div>')
 
     [void]$sb.AppendLine('<label class="filtro"><input type="checkbox" id="soDiv"> Mostrar apenas as divergências</label>')
 
     $divs = @($Itens | Where-Object { $null -ne $_.Esperado -and $_.Situacao -ne "OK" })
     if ($divs.Count -gt 0) {
-        [void]$sb.AppendLine('<section class="card motivos"><header><div class="tit">Por que houve diferença</div></header><table><tbody>')
+        [void]$sb.AppendLine("<details class=""card motivos""><summary><span class=""tit"">Por que houve diferença</span><span class=""cont"">$($divs.Count)</span><span class=""dica""></span></summary><table><tbody>")
         foreach ($d in $divs) {
             $motivo = if ($d.Observacao) { Protect-Html $d.Observacao } else { '<span class="semjust">sem justificativa informada</span>' }
             [void]$sb.AppendLine("<tr><td class=""fic"">Ficha $(Protect-Html $d.Ficha)</td><td>$(Protect-Html $d.Setor)</td><td class=""num"">$($d.Diferenca)</td><td>$motivo</td></tr>")
         }
-        [void]$sb.AppendLine('</tbody></table></section>')
+        [void]$sb.AppendLine('</tbody></table></details>')
     }
 
     foreach ($f in $Resumo) {
