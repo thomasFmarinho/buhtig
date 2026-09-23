@@ -118,9 +118,10 @@ function ConvertTo-Itens {
             $realizado = $null
             if ($reply -match '^\s*(\d+)') { $realizado = [int]$Matches[1] }
 
-            # Texto entre parenteses costuma explicar a divergencia.
+            # Tudo que o tecnico escreveu depois do numero e a justificativa.
             $observacao = ""
-            if ($reply -match '\(([^)]+)\)') { $observacao = $Matches[1] }
+            if ($reply -match '^\s*\d+\b\s*(.+)$') { $observacao = $Matches[1] }
+            $observacao = $observacao.Trim("() -:.".ToCharArray())
 
             $situacao  = "INFO"
             $diferenca = $null
@@ -209,6 +210,11 @@ td{padding:10px 16px;border-bottom:1px solid #f1f2f4}
 tr:last-child td{border-bottom:none}
 tfoot td{font-weight:600;background:#fafbfc;border-top:2px solid var(--linha);border-bottom:none}
 tfoot td.neg{color:var(--falta)}
+.semjust{color:var(--exc);font-style:italic}
+.motivos table td{border-bottom:1px solid #f1f2f4}
+.motivos td.fic{white-space:nowrap;color:var(--sec)}
+.tit a{color:inherit;text-decoration:none;border-bottom:1px dotted var(--sec)}
+.tit a:hover{border-bottom-style:solid}
 tfoot td.rot{color:var(--sec);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
 th.num,td.num{text-align:right;width:90px;font-variant-numeric:tabular-nums}
 tr.falta{background:#fdf3f2}
@@ -244,6 +250,16 @@ tr.sem{background:#f7f7f8}
 
     [void]$sb.AppendLine('<label class="filtro"><input type="checkbox" id="soDiv"> Mostrar apenas as divergências</label>')
 
+    $divs = @($Itens | Where-Object { $null -ne $_.Esperado -and $_.Situacao -ne "OK" })
+    if ($divs.Count -gt 0) {
+        [void]$sb.AppendLine('<section class="card motivos"><header><div class="tit">Por que houve diferença</div></header><table><tbody>')
+        foreach ($d in $divs) {
+            $motivo = if ($d.Observacao) { Protect-Html $d.Observacao } else { '<span class="semjust">sem justificativa informada</span>' }
+            [void]$sb.AppendLine("<tr><td class=""fic"">Ficha $(Protect-Html $d.Ficha)</td><td>$(Protect-Html $d.Setor)</td><td class=""num"">$($d.Diferenca)</td><td>$motivo</td></tr>")
+        }
+        [void]$sb.AppendLine('</tbody></table></section>')
+    }
+
     foreach ($f in $Resumo) {
         $daFicha  = @($Itens | Where-Object { $_.TaskID -eq $f.TaskID })
         $contados = @($daFicha | Where-Object { $null -ne $_.Esperado })
@@ -254,7 +270,9 @@ tr.sem{background:#f7f7f8}
 
         [void]$sb.AppendLine("<section class=""card"" data-div=""$($f.Divergencias)"">")
         [void]$sb.AppendLine('<header><div>')
-        [void]$sb.AppendLine("<div class=""tit"">Ficha $(Protect-Html $f.Ficha) &middot; $(Protect-Html $f.Cliente)</div>")
+        $titulo = "Ficha $(Protect-Html $f.Ficha) &middot; $(Protect-Html $f.Cliente)"
+        if ($f.TaskUrl) { $titulo = "<a href=""$(Protect-Html $f.TaskUrl)"" target=""_blank"" rel=""noopener"" title=""Abrir a tarefa no Auvo"">$titulo</a>" }
+        [void]$sb.AppendLine("<div class=""tit"">$titulo</div>")
         [void]$sb.AppendLine("<div class=""meta"">$(Format-DataBr $f.Data) &middot; $(Protect-Html $f.Responsavel) &middot; $(Protect-Html $f.Servico)</div>")
         [void]$sb.AppendLine("</div>$badge</header>")
 
@@ -271,7 +289,10 @@ tr.sem{background:#f7f7f8}
                 $dif  = if ($null -eq $i.Diferenca) { "-" } else { $i.Diferenca }
                 [void]$sb.AppendLine("<tr class=""$cls"" data-sit=""$($i.Situacao)"">")
                 [void]$sb.AppendLine("<td>$(Protect-Html $i.Setor)</td><td class=""num"">$($i.Esperado)</td><td class=""num"">$real</td><td class=""num"">$dif</td>")
-                [void]$sb.AppendLine("<td><span class=""sit $cls"">$($i.Situacao)</span></td><td class=""obs"">$(Protect-Html $i.Observacao)</td></tr>")
+                $obsCel = if ($i.Observacao)        { Protect-Html $i.Observacao }
+                          elseif ($i.Situacao -ne "OK") { '<span class="semjust">sem justificativa</span>' }
+                          else                          { "" }
+                [void]$sb.AppendLine("<td><span class=""sit $cls"">$($i.Situacao)</span></td><td class=""obs"">$obsCel</td></tr>")
             }
             [void]$sb.AppendLine('</tbody><tfoot><tr>')
             [void]$sb.AppendLine("<td class=""rot"">Total da ficha &middot; $($contados.Count) setores</td>")
@@ -279,9 +300,13 @@ tr.sem{background:#f7f7f8}
             [void]$sb.AppendLine('<td colspan="2"></td></tr></tfoot></table>')
         }
 
-        $infosUteis = @($infos | Where-Object { $_.RespostaBruta -and $_.RespostaBruta.Trim() -notmatch '^\.*$' })
-        if ($infosUteis.Count -gt 0) {
-            $partes = $infosUteis | ForEach-Object { "<b>$(Protect-Html $_.Setor):</b> $(Protect-Html $_.RespostaBruta)" }
+        $partes = @()
+        foreach ($i in @($infos | Where-Object { $_.RespostaBruta -and $_.RespostaBruta.Trim() -notmatch '^\.*$' })) {
+            $partes += "<b>$(Protect-Html $i.Setor):</b> $(Protect-Html $i.RespostaBruta)"
+        }
+        if ($f.Pendencia) { $partes += "<b>Pendência:</b> $(Protect-Html $f.Pendencia)" }
+        if ($f.Relatorio) { $partes += "<b>Relato do técnico:</b> $(Protect-Html $f.Relatorio)" }
+        if ($partes.Count -gt 0) {
             [void]$sb.AppendLine("<div class=""info"">$($partes -join ' &nbsp;&middot;&nbsp; ')</div>")
         }
 
@@ -326,6 +351,10 @@ foreach ($t in $tarefas) {
     if (-not $totalRealizado) { $totalRealizado = 0 }
 
     $resumo += [pscustomobject]@{
+        TaskUrl        = $detalhe.taskUrl
+        Pendencia      = $detalhe.pendency
+        Relatorio      = $detalhe.report
+        Duracao        = $detalhe.duration
         Ficha          = $detalhe.externalId
         TaskID         = $detalhe.taskID
         Data           = $detalhe.taskDate
