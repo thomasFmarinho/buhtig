@@ -184,63 +184,88 @@ function New-RelatorioHtml {
     $classeVer = if ($aVerificar -eq 0) { "ok" } else { "falta" }
 
     $css = @"
-:root{--bg:#f4f5f7;--card:#fff;--linha:#e5e7eb;--txt:#1f2430;--sec:#6b7280;--ok:#12805c;--falta:#c0392b;--exc:#b45309}
+:root{
+--plane:#f7f7f5;--surface:#ffffff;--ink:#0b0b0b;--ink2:#52514e;--muted:#898781;
+--hair:#e1e0d9;--hair2:#f0efe9;
+--good:#006300;--good-mark:#0ca30c;--good-bg:#e9f5e9;
+--crit:#b3261e;--crit-mark:#d03b3b;--crit-bg:#fdecea;
+--warn:#8a5a00;--warn-mark:#fab219;--warn-bg:#fdf3e2;
+--neutro-bg:#f2f2ef;--r:12px}
 *{box-sizing:border-box}
-body{margin:0;padding:32px 16px;-webkit-font-smoothing:antialiased;background:var(--bg);color:var(--txt);font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif}
-.wrap{max-width:1080px;margin:0 auto}
-h1{font-size:22px;margin:0 0 4px;display:flex;align-items:center;gap:10px;letter-spacing:-.01em}
-h1::before{content:"";width:4px;height:21px;border-radius:2px;background:linear-gradient(180deg,#159c72,#0e6a4d)}
-.sub{color:var(--sec);font-size:14px;margin-bottom:24px}
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px}
-.kpi{background:var(--card);border:1px solid var(--linha);border-radius:10px;padding:14px 16px}
-.kpi .rot{font-size:12px;color:var(--sec);text-transform:uppercase;letter-spacing:.04em}
-.kpi .val{font-size:26px;font-weight:600;margin-top:4px}
-.kpi .val.ok{color:var(--ok)}
-.kpi .val.falta{color:var(--falta)}
-.filtro{display:block;margin-bottom:16px;font-size:14px;color:var(--sec);cursor:pointer}
-.card{background:var(--card);border:1px solid var(--linha);border-radius:10px;margin-bottom:16px;overflow:hidden;box-shadow:0 1px 2px rgba(16,24,40,.04),0 1px 3px rgba(16,24,40,.05)}
-tbody tr{transition:box-shadow .12s ease}
-tbody tr:hover{box-shadow:inset 0 0 0 999px rgba(16,24,40,.018)}
-.kpi.alerta{box-shadow:inset 0 3px 0 var(--falta)}
-.card>header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--linha);flex-wrap:wrap}
-.tit{font-weight:600}
-.meta{color:var(--sec);font-size:13px;margin-top:2px}
-.badge{font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;white-space:nowrap}
-.badge.ok{background:#e7f5ef;color:var(--ok)}
-.badge.alerta{background:#fdecea;color:var(--falta)}
-table{width:100%;border-collapse:collapse;font-size:14px}
-th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--sec);padding:10px 16px;border-bottom:1px solid var(--linha);font-weight:600}
-td{padding:10px 16px;border-bottom:1px solid #f1f2f4}
-tr:last-child td{border-bottom:none}
-tfoot td{font-weight:600;background:#fafbfc;border-top:2px solid var(--linha);border-bottom:none}
-tfoot td.neg{color:var(--falta)}
-.semjust{color:var(--exc);font-style:italic}
-details.motivos>summary{display:flex;align-items:center;gap:10px;padding:14px 16px;cursor:pointer;list-style:none;-webkit-user-select:none;user-select:none}
+body{margin:0;padding:36px 18px 56px;background:var(--plane);color:var(--ink);font-size:14px;line-height:1.45;
+-webkit-font-smoothing:antialiased;font-family:ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif}
+.wrap{max-width:1100px;margin:0 auto}
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+h1{font-size:21px;font-weight:650;margin:0;display:flex;align-items:center;gap:10px;letter-spacing:-.015em}
+h1::before{content:"";width:4px;height:20px;border-radius:2px;background:linear-gradient(180deg,#0ca30c,#006300)}
+.sub{color:var(--muted);font-size:12.5px;margin-top:5px}
+.gerado{color:var(--muted);font-size:12px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:12px;margin-bottom:20px}
+.kpi{background:var(--surface);border:1px solid var(--hair);border-radius:var(--r);padding:14px 16px;position:relative;overflow:hidden}
+.kpi .rot{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;font-weight:600}
+.kpi .val{font-size:27px;font-weight:650;margin-top:5px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.kpi .val.ok{color:var(--good)}
+.kpi .val.falta{color:var(--crit)}
+.kpi.alerta::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:var(--crit-mark)}
+.filtro{display:inline-flex;align-items:center;gap:7px;margin-bottom:14px;font-size:13px;color:var(--ink2);cursor:pointer;
+background:var(--surface);border:1px solid var(--hair);border-radius:999px;padding:7px 13px}
+.filtro:hover{border-color:var(--muted)}
+.filtro input{margin:0;cursor:pointer}
+.card{background:var(--surface);border:1px solid var(--hair);border-radius:var(--r);margin-bottom:14px;overflow:hidden;
+box-shadow:0 1px 2px rgba(16,24,40,.03),0 4px 10px -6px rgba(16,24,40,.08)}
+.card>header{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;padding:15px 17px;border-bottom:1px solid var(--hair2);flex-wrap:wrap}
+.tit{font-weight:650;font-size:14.5px;letter-spacing:-.01em}
+.tit a{color:inherit;text-decoration:none;border-bottom:1px solid var(--hair)}
+.tit a:hover{border-bottom-color:var(--muted)}
+.meta{color:var(--muted);font-size:12.5px;margin-top:3px}
+.meter{display:flex;align-items:center;gap:9px;margin-top:10px;max-width:330px}
+.meter-track{flex:1;height:6px;border-radius:999px;background:#f2cecb;overflow:hidden}
+.meter-track.cheio{background:var(--hair)}
+.meter-fill{height:100%;border-radius:999px;background:var(--good-mark)}
+.meter-val{font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums;min-width:36px}
+.badge{font-size:11.5px;font-weight:650;padding:5px 11px;border-radius:999px;white-space:nowrap}
+.badge.ok{background:var(--good-bg);color:var(--good)}
+.badge.alerta{background:var(--crit-bg);color:var(--crit)}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600;padding:10px 17px;border-bottom:1px solid var(--hair)}
+td{padding:9px 17px;border-bottom:1px solid var(--hair2);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+th.num,td.num{text-align:right;width:92px;font-variant-numeric:tabular-nums}
+tbody tr{transition:background .12s ease}
+tbody tr:hover{background:#fbfbf9}
+tr.falta{background:#fdf4f2}
+tr.falta:hover{background:#fbeeeb}
+tr.exc{background:#fdf7ec}
+tr.exc:hover{background:#fbf2e2}
+tr.sem{background:#f7f7f5}
+tr.sem:hover{background:#f2f2ef}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:650;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.pill.ok{background:var(--good-bg);color:var(--good)}
+.pill.falta{background:var(--crit-bg);color:var(--crit)}
+.pill.exc{background:var(--warn-bg);color:var(--warn)}
+.pill.sem{background:var(--neutro-bg);color:var(--ink2)}
+.pill .gl{font-size:9px;line-height:1}
+.obs{color:var(--ink2);font-size:12.5px}
+.semjust{color:var(--warn);font-style:italic}
+tfoot td{font-weight:650;background:#fafaf8;border-top:1px solid var(--hair);border-bottom:none;padding-top:11px;padding-bottom:11px}
+tfoot td.rot{color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em}
+tfoot td.neg{color:var(--crit)}
+details.motivos>summary{display:flex;align-items:center;gap:10px;padding:14px 17px;cursor:pointer;list-style:none;-webkit-user-select:none;user-select:none}
 details.motivos>summary::-webkit-details-marker{display:none}
-details.motivos>summary::before{content:"";width:0;height:0;border-left:5px solid var(--sec);border-top:4px solid transparent;border-bottom:4px solid transparent;transition:transform .15s ease}
+details.motivos>summary::before{content:"";width:0;height:0;border-left:5px solid var(--muted);border-top:4px solid transparent;border-bottom:4px solid transparent;transition:transform .18s ease}
 details.motivos[open]>summary::before{transform:rotate(90deg)}
-details.motivos>summary:hover{background:#fafbfc}
-details.motivos[open]>summary{border-bottom:1px solid var(--linha)}
-details.motivos .cont{background:#fdecea;color:var(--falta);font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px}
-details.motivos .dica{margin-left:auto;font-size:12px;color:var(--sec);font-weight:400}
+details.motivos>summary:hover{background:#fbfbf9}
+details.motivos[open]>summary{border-bottom:1px solid var(--hair2)}
+details.motivos .cont{background:var(--crit-bg);color:var(--crit);font-size:11px;font-weight:650;padding:2px 9px;border-radius:999px}
+details.motivos .dica{margin-left:auto;font-size:11.5px;color:var(--muted);font-weight:400}
 details.motivos .dica::after{content:"clique para abrir"}
 details.motivos[open] .dica::after{content:"clique para fechar"}
-.motivos table td{border-bottom:1px solid #f1f2f4}
-.motivos td.fic{white-space:nowrap;color:var(--sec)}
-.tit a{color:inherit;text-decoration:none;border-bottom:1px dotted var(--sec)}
-.tit a:hover{border-bottom-style:solid}
-tfoot td.rot{color:var(--sec);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
-th.num,td.num{text-align:right;width:90px;font-variant-numeric:tabular-nums}
-tr.falta{background:#fdf3f2}
-tr.exc{background:#fdf6ec}
-tr.sem{background:#f7f7f8}
-.sit{font-weight:600;font-size:13px}
-.sit.ok{color:var(--ok)}.sit.falta{color:var(--falta)}.sit.exc{color:var(--exc)}.sit.sem{color:var(--sec)}
-.obs{color:var(--sec);font-size:13px}
-.info{padding:12px 16px;border-top:1px solid var(--linha);background:#fafafa;font-size:13px;color:var(--sec)}
-.info b{color:var(--txt);font-weight:600}
-.vazio{background:var(--card);border:1px solid var(--linha);border-radius:10px;padding:32px;text-align:center;color:var(--sec)}
-@media print{body{background:#fff;padding:0}.filtro{display:none}.card{break-inside:avoid}}
+.motivos td.fic{white-space:nowrap;color:var(--muted);font-size:12.5px}
+.info{padding:11px 17px;border-top:1px solid var(--hair2);background:#fafaf8;font-size:12.5px;color:var(--ink2)}
+.info b{color:var(--ink);font-weight:650}
+.vazio{background:var(--surface);border:1px solid var(--hair);border-radius:var(--r);padding:38px;text-align:center;color:var(--muted)}
+@media print{body{background:#fff;padding:0}.filtro{display:none}.card{break-inside:avoid;box-shadow:none}}
+@media(max-width:640px){th,td{padding-left:12px;padding-right:12px}}
 "@
 
     $sb = New-Object System.Text.StringBuilder
@@ -251,8 +276,10 @@ tr.sem{background:#f7f7f8}
     [void]$sb.AppendLine("<style>$css</style></head><body><div class=""wrap"">")
 
     $periodo = if ($StartDate -eq $EndDate) { Format-DataBr $StartDate } else { "$(Format-DataBr $StartDate) a $(Format-DataBr $EndDate)" }
-    [void]$sb.AppendLine("<h1>Contagem de execução &middot; Auvo</h1>")
-    [void]$sb.AppendLine("<div class=""sub"">Período: $periodo &middot; gerado em $(Get-Date -Format 'dd/MM/yyyy HH:mm')</div>")
+    [void]$sb.AppendLine('<div class="top"><div>')
+    [void]$sb.AppendLine("<h1>Contagem de execução</h1>")
+    [void]$sb.AppendLine("<div class=""sub"">Período: $periodo</div>")
+    [void]$sb.AppendLine("</div><div class=""gerado"">gerado em $(Get-Date -Format 'dd/MM/yyyy HH:mm')</div></div>")
 
     [void]$sb.AppendLine('<div class="kpis">')
     [void]$sb.AppendLine("<div class=""kpi""><div class=""rot"">Fichas</div><div class=""val"">$($Resumo.Count)</div></div>")
@@ -280,7 +307,8 @@ tr.sem{background:#f7f7f8}
         $infos    = @($daFicha | Where-Object { $null -eq $_.Esperado })
 
         $badge = if ($f.Divergencias -eq 0) { '<span class="badge ok">Conferido</span>' }
-                 else { "<span class=""badge alerta"">$($f.Divergencias) divergência(s)</span>" }
+                 elseif ($f.Divergencias -eq 1) { '<span class="badge alerta">1 divergência</span>' }
+                 else { "<span class=""badge alerta"">$($f.Divergencias) divergências</span>" }
 
         [void]$sb.AppendLine("<section class=""card"" data-div=""$($f.Divergencias)"">")
         [void]$sb.AppendLine('<header><div>')
@@ -288,6 +316,11 @@ tr.sem{background:#f7f7f8}
         if ($f.TaskUrl) { $titulo = "<a href=""$(Protect-Html $f.TaskUrl)"" target=""_blank"" rel=""noopener"" title=""Abrir a tarefa no Auvo"">$titulo</a>" }
         [void]$sb.AppendLine("<div class=""tit"">$titulo</div>")
         [void]$sb.AppendLine("<div class=""meta"">$(Format-DataBr $f.Data) &middot; $(Protect-Html $f.Responsavel) &middot; $(Protect-Html $f.Servico)</div>")
+        $pct = 0
+        if ($f.TotalEsperado -gt 0) { $pct = [math]::Round(100 * $f.TotalRealizado / $f.TotalEsperado) }
+        $larg = [math]::Min($pct, 100)
+        $trilha = if ($larg -ge 100) { "cheio" } else { "" }
+        [void]$sb.AppendLine("<div class=""meter""><div class=""meter-track $trilha""><div class=""meter-fill"" style=""width:$larg%""></div></div><span class=""meter-val"">$pct%</span></div>")
         [void]$sb.AppendLine("</div>$badge</header>")
 
         if ($contados.Count -gt 0) {
@@ -306,7 +339,13 @@ tr.sem{background:#f7f7f8}
                 $obsCel = if ($i.Observacao)        { Protect-Html $i.Observacao }
                           elseif ($i.Situacao -ne "OK") { '<span class="semjust">sem justificativa</span>' }
                           else                          { "" }
-                [void]$sb.AppendLine("<td><span class=""sit $cls"">$($i.Situacao)</span></td><td class=""obs"">$obsCel</td></tr>")
+                $glifo = switch ($i.Situacao) {
+                    "FALTA"        { "&#9660;" }
+                    "EXCEDENTE"    { "&#9650;" }
+                    "SEM RESPOSTA" { "&#8211;" }
+                    default        { "&#10003;" }
+                }
+                [void]$sb.AppendLine("<td><span class=""pill $cls""><span class=""gl"">$glifo</span>$($i.Situacao)</span></td><td class=""obs"">$obsCel</td></tr>")
             }
             [void]$sb.AppendLine('</tbody><tfoot><tr>')
             [void]$sb.AppendLine("<td class=""rot"">Total da ficha &middot; $($contados.Count) setores</td>")
