@@ -179,12 +179,25 @@ function Format-DataBr {
 function New-RelatorioHtml {
     param($Resumo, $Itens, [string]$StartDate, [string]$EndDate, [string]$Caminho)
 
+    # No relatorio, quem precisa de atencao vem primeiro; o resto segue por data.
+    $Resumo = @($Resumo | Sort-Object -Property @{Expression={ [int]($_.Divergencias -eq 0) }}, Data, Ficha)
+
     $gEsperado  = ($Resumo | Measure-Object -Property TotalEsperado  -Sum).Sum
     $gRealizado = ($Resumo | Measure-Object -Property TotalRealizado -Sum).Sum
     if (-not $gEsperado)  { $gEsperado  = 0 }
     if (-not $gRealizado) { $gRealizado = 0 }
     $gDif       = $gRealizado - $gEsperado
     $aVerificar = @($Resumo | Where-Object { $_.Divergencias -gt 0 }).Count
+
+    $faltaQtd = 0
+    $semQtd   = 0
+    foreach ($i in $Itens) {
+        if     ($i.Situacao -eq "FALTA")        { $faltaQtd += ($i.Esperado - $i.Realizado) }
+        elseif ($i.Situacao -eq "SEM RESPOSTA") { $semQtd   += $i.Esperado }
+    }
+    $detalhe = @()
+    if ($faltaQtd -gt 0) { $detalhe += "$faltaQtd não executada$(if ($faltaQtd -gt 1) { 's' })" }
+    if ($semQtd   -gt 0) { $detalhe += "$semQtd não registrada$(if ($semQtd -gt 1) { 's' })" }
 
     $classeDif = if ($gDif -eq 0) { "ok" } else { "falta" }
     $classeVer = if ($aVerificar -eq 0) { "ok" } else { "falta" }
@@ -212,6 +225,7 @@ h1::before{content:"";width:4px;height:20px;border-radius:2px;background:linear-
 .kpi .val{font-size:27px;font-weight:650;margin-top:5px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
 .kpi .val.ok{color:var(--good)}
 .kpi .val.falta{color:var(--crit)}
+.kpi .det{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.35}
 .kpi.alerta::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:var(--crit-mark)}
 .filtro{display:inline-flex;align-items:center;gap:7px;margin-bottom:14px;font-size:13px;color:var(--ink2);cursor:pointer;
 background:var(--surface);border:1px solid var(--hair);border-radius:999px;padding:7px 13px}
@@ -259,6 +273,7 @@ tr.sem td:first-child{box-shadow:inset 3px 0 0 #c9c9c1}
 tfoot td{font-weight:650;background:#fafaf8;border-top:1px solid var(--hair);border-bottom:none;padding-top:11px;padding-bottom:11px}
 tfoot td.rot{color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em}
 tfoot td.neg{color:var(--crit)}
+td.neg{color:var(--crit)}
 details.motivos>summary{display:flex;align-items:center;gap:10px;padding:14px 17px;cursor:pointer;list-style:none;-webkit-user-select:none;user-select:none}
 details.motivos>summary::-webkit-details-marker{display:none}
 details.motivos>summary::before{content:"";width:0;height:0;border-left:5px solid var(--muted);border-top:4px solid transparent;border-bottom:4px solid transparent;transition:transform .18s ease}
@@ -294,9 +309,32 @@ details.motivos[open] .dica::after{content:"clique para fechar"}
     [void]$sb.AppendLine("<div class=""kpi""><div class=""rot"">Fichas</div><div class=""val"">$($Resumo.Count)</div></div>")
     [void]$sb.AppendLine("<div class=""kpi""><div class=""rot"">Esperado</div><div class=""val"">$gEsperado</div></div>")
     [void]$sb.AppendLine("<div class=""kpi""><div class=""rot"">Realizado</div><div class=""val"">$gRealizado</div></div>")
-    [void]$sb.AppendLine("<div class=""kpi $(if ($gDif -ne 0) { ""alerta"" })""><div class=""rot"">Diferença</div><div class=""val $classeDif"">$gDif</div></div>")
+    $linhaDet = if ($detalhe.Count -gt 0) { "<div class=""det"">$($detalhe -join '<br>')</div>" } else { "" }
+    [void]$sb.AppendLine("<div class=""kpi $(if ($gDif -ne 0) { ""alerta"" })""><div class=""rot"">Diferença</div><div class=""val $classeDif"">$gDif</div>$linhaDet</div>")
     [void]$sb.AppendLine("<div class=""kpi $(if ($aVerificar -gt 0) { ""alerta"" })""><div class=""rot"">A verificar</div><div class=""val $classeVer"">$aVerificar</div></div>")
     [void]$sb.AppendLine('</div>')
+
+    $porCliente = @($Resumo | Group-Object Cliente | ForEach-Object {
+        $g = $_.Group
+        [pscustomobject]@{
+            Cliente      = $_.Name
+            Fichas       = $_.Count
+            Esperado     = ($g | Measure-Object -Property TotalEsperado  -Sum).Sum
+            Realizado    = ($g | Measure-Object -Property TotalRealizado -Sum).Sum
+            Divergencias = ($g | Measure-Object -Property Divergencias   -Sum).Sum
+        }
+    } | Sort-Object @{Expression={ $_.Realizado - $_.Esperado }}, Cliente)
+
+    if ($porCliente.Count -gt 1) {
+        [void]$sb.AppendLine('<section class="card"><header><div class="tit">Por cliente</div></header>')
+        [void]$sb.AppendLine('<table><thead><tr><th>Cliente</th><th class="num">Fichas</th><th class="num">Esperado</th><th class="num">Realizado</th><th class="num">Dif.</th><th class="num">Diverg.</th></tr></thead><tbody>')
+        foreach ($c in $porCliente) {
+            $dif = $c.Realizado - $c.Esperado
+            $clsDif = if ($dif -lt 0) { "num neg" } else { "num" }
+            [void]$sb.AppendLine("<tr><td>$(Protect-Html $c.Cliente)</td><td class=""num"">$($c.Fichas)</td><td class=""num"">$($c.Esperado)</td><td class=""num"">$($c.Realizado)</td><td class=""$clsDif"">$(if ($dif -ne 0) { $dif })</td><td class=""num"">$(if ($c.Divergencias -gt 0) { $c.Divergencias })</td></tr>")
+        }
+        [void]$sb.AppendLine('</tbody></table></section>')
+    }
 
     [void]$sb.AppendLine('<label class="filtro"><input type="checkbox" id="soDiv"> Mostrar apenas as divergências</label>')
 

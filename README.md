@@ -60,8 +60,9 @@ nem liberar política de execução, nem digitar credenciais.
 Cada execução gera três arquivos na pasta `saida/`:
 
 - `relatorio-<data>.html` — relatório visual, abre sozinho no navegador ao final.
-  Traz os totais no topo, uma tabela por ficha, as divergências destacadas em
-  vermelho e um filtro "mostrar apenas as divergências". Imprime bem em PDF.
+  Traz os totais no topo (com a diferença separada entre o que não foi executado
+  e o que não foi registrado), um resumo por cliente quando há mais de um, e uma
+  tabela por ficha — as que têm problema aparecem primeiro. Imprime bem em PDF.
 - `itens-<data>.csv` — uma linha por setor/item conferido
 - `resumo-<data>.csv` — uma linha por ficha, com totais e status
 
